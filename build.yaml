@@ -1,0 +1,32 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker
+      uses: docker/setup-docker@v2
+      with:
+        dockerfile: Dockerfile  # Path to your Dockerfile
+
+    - name: Build and push Docker image
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        REGISTRY: gcr.io
+        IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
+        TAG: ${{ github.sha }}
+      run: |
+        docker build -t $us-central1-docker.pkg.dev/prj-leddartech-poc-sbx/taskrepo/backend:latest .
+        echo ${{ secrets.GCP_KEY_FILE }} | base64 -d > keyfile.json
+        gcloud auth activate-service-account --key-file=keyfile.json
+        docker tag $REGISTRY/$PROJECT_ID/$IMAGE_NAME:$TAG $REGISTRY/$PROJECT_ID/$IMAGE_NAME:$TAG
+        docker push $us-central1-docker.pkg.dev/prj-leddartech-poc-sbx/taskrepo/backend:latest
